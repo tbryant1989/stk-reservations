@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Story-time's Kitchen – Private Reservation</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <!-- PWA manifest + theme color for Android -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#ff6f91" />
+
+  <!-- Fallback favicon (browser tab icon) -->
+  <link rel="icon" type="image/png" href="icons/icon-192.png" />
+
+  <style>
+    :root {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color-scheme: light;
+      --primary: #ff6f91;
+      --primary-soft: #ffe3ec;
+      --accent: #ff9a9e;
+      --text-main: #2f1f28;
+      --card-bg: rgba(255, 255, 255, 0.96);
+      --border-subtle: rgba(255, 255, 255, 0.7);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+      background: radial-gradient(circle at top, #ffe1f2 0%, #ffe8cc 40%, #fdd6ff 75%);
+      position: relative;
+      overflow: hidden;
+      color: var(--text-main);
+    }
+
+    /* Soft animated background glow */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: -40%;
+      background:
+        radial-gradient(circle at 10% 0%, rgba(255, 192, 203, 0.4), transparent 60%),
+        radial-gradient(circle at 90% 100%, rgba(255, 223, 186, 0.45), transparent 60%);
+      mix-blend-mode: screen;
+      opacity: 0.7;
+      z-index: -3;
+      animation: glowShift 18s ease-in-out infinite alternate;
+    }
+
+    @keyframes glowShift {
+      0% {
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+      100% {
+        transform: translate3d(0, -20px, 0) scale(1.03);
+      }
+    }
+
+    /* Floating hearts background layer */
+    .floating-heart {
+      position: fixed;
+      font-size: 2.2rem;
+      color: rgba(255, 105, 180, 0.32);
+      z-index: -2;
+      animation: floatHeart 18s linear infinite;
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .floating-heart.h1 {
+      left: 8%;
+      bottom: -10%;
+      animation-duration: 19s;
+      animation-delay: -3s;
+    }
+
+    .floating-heart.h2 {
+      left: 40%;
+      bottom: -12%;
+      animation-duration: 22s;
+      animation-delay: -6s;
+    }
+
+    .floating-heart.h3 {
+      right: 10%;
+      bottom: -15%;
+      animation-duration: 24s;
+      animation-delay: -9s;
+    }
+
+    @keyframes floatHeart {
+      0% {
+        transform: translate3d(0, 0, 0) scale(1) rotate(0deg);
+        opacity: 0;
+      }
+      10% {
+        opacity: 0.8;
+      }
+      50% {
+        transform: translate3d(-10px, -40vh, 0) scale(1.1) rotate(-8deg);
+      }
+      100% {
+        transform: translate3d(10px, -90vh, 0) scale(1.2) rotate(8deg);
+        opacity: 0;
+      }
+    }
+
+    main.app {
+      width: 100%;
+      max-width: 480px;
+      margin: 1.1rem;
+      background: var(--card-bg);
+      border-radius: 26px;
+      box-shadow:
+        0 20px 45px rgba(0, 0, 0, 0.15),
+        0 0 0 1px var(--border-subtle);
+      padding: 1.6rem 1.25rem 1.9rem;
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 2.2rem);
+      backdrop-filter: blur(12px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Subtle light pattern overlay in app */
+    main.app::before {
+      content: "";
+      position: absolute;
+      inset: -20%;
+      background:
+        radial-gradient(circle at top left, rgba(255, 192, 203, 0.2), transparent 55%),
+        radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.3), transparent 55%);
+      opacity: 0.9;
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 1.1rem;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.25rem 0.9rem;
+      border-radius: 999px;
+      background: rgba(255, 171, 196, 0.28);
+      color: var(--primary);
+      font-size: 0.75rem;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    .pill span {
+      font-size: 1.1rem;
+    }
+
+    h1 {
+      font-size: 1.7rem;
+      margin: 0 0 0.3rem;
+      letter-spacing: 0.03em;
+    }
+
+    .subtitle {
+      font-size: 0.9rem;
+      color: #5c4a52;
+      margin: 0;
+    }
+
+    .subtitle strong {
+      color: var(--primary);
+    }
+
+    /* Soft divider */
+    .divider {
+      margin: 1.1rem 0 0.4rem;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.08), transparent);
+    }
+
+    form {
+      margin-top: 0.5rem;
+      display: grid;
+      gap: 0.75rem;
+      overflow-y: auto;
+      padding-right: 0.2rem;
+      flex: 1 1 auto;
+    }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #4b3a42;
+      display: block;
+      margin-bottom: 0.18rem;
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 0.7rem 0.75rem;
+      border-radius: 14px;
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      font-size: 0.9rem;
+      outline: none;
+      transition: border 0.15s, box-shadow 0.15s, background 0.15s, transform 0.08s;
+      background: rgba(255, 255, 255, 0.92);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    input:focus, textarea:focus, select:focus {
+      border-color: rgba(255, 111, 145, 0.7);
+      box-shadow: 0 0 0 2px rgba(255, 111, 145, 0.2);
+      background: #fff;
+      transform: translateY(-0.5px);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 70px;
+      max-height: 120px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 420px) {
+      .row {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.55rem;
+      }
+    }
+
+    .hint {
+      font-size: 0.75rem;
+      color: #8a7b82;
+      margin-top: 0.2rem;
+    }
+
+    button {
+      margin-top: 0.3rem;
+      padding: 0.85rem 1rem;
+      border-radius: 999px;
+      border: none;
+      font-size: 0.96rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(130deg, var(--primary), var(--accent));
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      box-shadow: 0 13px 28px rgba(255, 111, 145, 0.55);
+      transition: transform 0.12s ease, box-shadow 0.12s ease, filter 0.12s ease;
+      width: 100%;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    button span {
+      font-size: 1.1rem;
+    }
+
+    button:hover {
+      transform: translateY(-1.5px);
+      box-shadow: 0 15px 32px rgba(255, 111, 145, 0.7);
+      filter: brightness(1.02);
+    }
+
+    button:active {
+      transform: translateY(0px) scale(0.99);
+      box-shadow: 0 8px 20px rgba(255, 111, 145, 0.55);
+      filter: brightness(0.98);
+    }
+
+    /* Soft breathing animation on main button */
+    button[type="submit"] {
+      animation: pulseButton 3.6s ease-in-out infinite;
+    }
+
+    @keyframes pulseButton {
+      0%, 100% {
+        transform: translateY(0);
+        box-shadow: 0 10px 24px rgba(255, 111, 145, 0.45);
+      }
+      50% {
+        transform: translateY(-1.5px);
+        box-shadow: 0 18px 38px rgba(255, 111, 145, 0.7);
+      }
+    }
+
+    #message {
+      margin-top: 0.4rem;
+      min-height: 1.1rem;
+    }
+
+    .success, .error {
+      font-size: 0.82rem;
+      padding: 0.55rem 0.7rem;
+      border-radius: 12px;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.4rem;
+    }
+
+    .success {
+      background: rgba(76, 175, 80, 0.08);
+      color: #256029;
+      border: 1px solid rgba(76, 175, 80, 0.3);
+    }
+
+    .error {
+      background: rgba(244, 67, 54, 0.08);
+      color: #b71c1c;
+      border: 1px solid rgba(244, 67, 54, 0.3);
+    }
+
+    .section-title {
+      margin-top: 1.05rem;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #3b2932;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 0.35rem;
+    }
+
+    .section-title span {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+    }
+
+    .section-title span::before {
+      content: "📖";
+      font-size: 0.9rem;
+    }
+
+    #clearBtn {
+      background: none;
+      border: none;
+      box-shadow: none;
+      padding: 0.1rem 0.3rem;
+      font-size: 0.72rem;
+      color: #a68d97;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      border-radius: 999px;
+    }
+
+    #clearBtn:hover {
+      background: rgba(0, 0, 0, 0.03);
+      transform: none;
+      box-shadow: none;
+      filter: none;
+    }
+
+    .reservation-list {
+      margin-top: 0.45rem;
+      max-height: 180px;
+      overflow-y: auto;
+      padding-right: 0.3rem;
+    }
+
+    .reservation-card {
+      border-radius: 16px;
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      padding: 0.7rem 0.8rem;
+      background: rgba(255, 255, 255, 0.96);
+      margin-bottom: 0.55rem;
+      font-size: 0.83rem;
+      box-shadow: 0 6px 14px rgba(0, 0, 0, 0.04);
+    }
+
+    .reservation-header-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 0.2rem;
+    }
+
+    .reservation-card strong {
+      font-size: 0.9rem;
+      color: #3c2b34;
+    }
+
+    .reservation-tag {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.55rem;
+      border-radius: 999px;
+      background: rgba(255, 171, 196, 0.15);
+      color: var(--primary);
+      white-space: nowrap;
+    }
+
+    .reservation-meta {
+      color: #6a5660;
+      line-height: 1.3;
+    }
+
+    .reservation-notes {
+      color: #8a7b82;
+      margin-top: 0.32rem;
+    }
+
+    .reservation-secret {
+      margin-top: 0.25rem;
+      color: #d81b60;
+      font-weight: 700;
+      font-size: 0.8rem;
+    }
+
+    .reservation-secret span {
+      margin-right: 0.25rem;
+    }
+
+    .empty-state {
+      font-size: 0.78rem;
+      color: #9a8b93;
+      margin-top: 0.55rem;
+      font-style: italic;
+    }
+
+    /* Make scrolling inside the app nicer on Android */
+    .reservation-list, form {
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0, 0, 0, 0.18) transparent;
+    }
+
+    .reservation-list::-webkit-scrollbar,
+    form::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .reservation-list::-webkit-scrollbar-thumb,
+    form::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.18);
+      border-radius: 999px;
+    }
+
+    @media (max-width: 380px) {
+      main.app {
+        margin: 0.7rem;
+        padding: 1.25rem 1rem 1.5rem;
+        border-radius: 22px;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      button {
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Animated floating hearts in the background -->
+  <div class="floating-heart h1">♥</div>
+  <div class="floating-heart h2">♥</div>
+  <div class="floating-heart h3">♥</div>
+
+  <main class="app">
+    <header>
+      <div class="pill">
+        <span>💖</span>
+        Private Dinner Reservation
+      </div>
+      <h1>Story-time's Kitchen</h1>
+      <p class="subtitle">
+        A special place for <strong>ShaLonta</strong> to reserve her own
+        date night with the chef she loves.
+      </p>
+    </header>
+
+    <div class="divider"></div>
+
+    <form id="reservationForm">
+      <div>
+        <label for="name">Your name</label>
+        <input id="name" type="text" required value="ShaLonta" />
+        <p class="hint">You can change this if you’d like.</p>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="date">Dinner date</label>
+          <input id="date" type="date" required />
+        </div>
+        <div>
+          <label for="time">Time</label>
+          <input id="time" type="time" required />
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="guests">Number of guests</label>
+          <select id="guests">
+            <option value="2">2 (Just us ❤️)</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5+">5 or more</option>
+          </select>
+        </div>
+        <div>
+          <label for="occasion">Occasion</label>
+          <select id="occasion">
+            <option value="Romantic Date Night">Romantic Date Night</option>
+            <option value="Birthday Celebration">Birthday Celebration</option>
+            <option value="Anniversary">Anniversary</option>
+            <option value="Just Because">Just Because</option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <label for="notes">Special notes or requests</label>
+        <textarea
+          id="notes"
+          placeholder="Favorite dessert, flowers on the table, playlist, etc."
+        ></textarea>
+      </div>
+
+      <button type="submit">
+        Reserve Dinner Night
+        <span>🍷</span>
+      </button>
+
+      <div id="message"></div>
+    </form>
+
+    <section>
+      <div class="section-title">
+        <span>Your Upcoming Reservations</span>
+        <button type="button" id="clearBtn">
+          🧹 Clear all
+        </button>
+      </div>
+      <div id="reservationList" class="reservation-list"></div>
+      <p id="emptyState" class="empty-state" style="display:none;">
+        No reservations yet. When your wife books a night, it will show up here.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const STORAGE_KEY = "stories_kitchen_reservations_v1";
+    const SECRET_CODE = "1184";
+
+    function loadReservations() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return [];
+        const data = JSON.parse(raw);
+        if (!Array.isArray(data)) return [];
+        return data;
+      } catch {
+        return [];
+      }
+    }
+
+    function saveReservations(list) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+    }
+
+    function formatDate(dateStr) {
+      if (!dateStr) return "";
+      const date = new Date(dateStr + "T00:00:00");
+      if (isNaN(date.getTime())) return dateStr;
+      return date.toLocaleDateString(undefined, {
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+    }
+
+    function notesHasSecretCode(notes) {
+      if (!notes) return false;
+      return notes.includes(SECRET_CODE);
+    }
+
+    function renderReservations() {
+      const container = document.getElementById("reservationList");
+      const emptyState = document.getElementById("emptyState");
+      container.innerHTML = "";
+
+      let reservations = loadReservations();
+
+      // sort by date/time ascending
+      reservations.sort((a, b) => {
+        const da = new Date(a.date + "T" + (a.time || "00:00"));
+        const db = new Date(b.date + "T" + (b.time || "00:00"));
+        return da - db;
+      });
+
+      if (!reservations.length) {
+        emptyState.style.display = "block";
+        return;
+      }
+
+      emptyState.style.display = "none";
+
+      reservations.forEach((r) => {
+        const card = document.createElement("div");
+        card.className = "reservation-card";
+
+        const hasSecret = notesHasSecretCode(r.notes);
+
+        card.innerHTML = `
+          <div class="reservation-header-line">
+            <strong>${r.name || "Guest"}</strong>
+            <span class="reservation-tag">${r.occasion || "Dinner"}</span>
+          </div>
+          <div class="reservation-meta">
+            📅 ${formatDate(r.date)} &nbsp; • &nbsp; ⏰ ${r.time || "TBD"}<br />
+            👥 ${r.guests || "2"} guests
+          </div>
+          ${
+            r.notes
+              ? `<div class="reservation-notes">📝 ${r.notes}</div>`
+              : ""
+          }
+          ${
+            hasSecret
+              ? `<div class="reservation-secret">
+                   <span>💞</span>Secret Romantic Package Activated
+                 </div>`
+              : ""
+          }
+        `;
+
+        container.appendChild(card);
+      });
+    }
+
+    function showMessage(text, type = "success") {
+      const messageDiv = document.getElementById("message");
+      if (!text) {
+        messageDiv.innerHTML = "";
+        return;
+      }
+
+      const icon = type === "success" ? "💌" : "⚠️";
+      messageDiv.innerHTML = `<div class="${type}"><span>${icon}</span><span>${text}</span></div>`;
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("reservationForm");
+      const clearBtn = document.getElementById("clearBtn");
+
+      // Pre-fill date with today
+      const dateInput = document.getElementById("date");
+      const today = new Date().toISOString().split("T")[0];
+      dateInput.value = today;
+
+      renderReservations();
+
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const name = document.getElementById("name").value.trim();
+        const date = document.getElementById("date").value;
+        const time = document.getElementById("time").value;
+        const guests = document.getElementById("guests").value;
+        const occasion = document.getElementById("occasion").value;
+        const notes = document.getElementById("notes").value.trim();
+
+        if (!name || !date || !time) {
+          showMessage("Please fill in your name, date, and time.", "error");
+          return;
+        }
+
+        const newReservation = {
+          id: Date.now(),
+          name,
+          date,
+          time,
+          guests,
+          occasion,
+          notes,
+          createdAt: new Date().toISOString(),
+        };
+
+        const list = loadReservations();
+        list.push(newReservation);
+        saveReservations(list);
+        renderReservations();
+
+        showMessage(
+          `Your dinner night on ${formatDate(date)} at ${time} is reserved. 💕`,
+          "success"
+        );
+      });
+
+      clearBtn.addEventListener("click", () => {
+        if (!confirm("Clear all saved reservations on this device?")) return;
+        localStorage.removeItem(STORAGE_KEY);
+        renderReservations();
+        showMessage("All reservations cleared on this device.", "success");
+      });
+    });
+  </script>
+</body>
+</html>
